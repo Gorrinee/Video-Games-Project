@@ -1,0 +1,156 @@
+---
+title: "Video Game Trends Project: Second Deliverable" 
+author: "Group1: Abdulshaheed Alqunber, Rami Bassil, Ekaterina Gorbunova, Khalid Khumayis" 
+output: html_document
+---
+
+##Abstract
+
+
+  One of the main branches of the entertainment industry is video games. The industry has been around for over 30 years and has seen extraordinary growth as it is worth $78.61 billion in 2017. It was decided to investigate statistics related to this growth and look for correlations and trends. The proposed research is based on a dataset of 9,490 (after cleaning) video games and some associated data referring to international sales and scores among others. The purpose of this study is to find a pattern and correlation between ratings of the games, popularity, platforms, genres, and developers. R Studio will be used to analyze the data.
+  
+  The dataset contains both qualitative and quantitative data. Important variables are Name, Genre, ESRB_Rating, Platform, Publisher, Developer, VGChartz_Score, Critic_Score, User_Score, Year of Release, Sales (number of games sold), Sales by region (NA, Japan, PAL, Other). However, not all variables will be used in the research since the focus will be on game genres and game scores and how they affect gaming consumption. Ultimately, the objective is to find a meaningful correlation between some variables such as genre and score, and Sales to make predictions about future trends in the industry.
+
+##Research Question and Motivation
+
+  A multitude of factors affects global sales of video games. Most obvious ones include the improvement of chips used in computers and consoles, GDP per capita, marketing, online influencers, and cultural trends. A lot of other factors also have an effect on sales but to a lesser extent. In this project, we analyze the extent to which those “other” factors (Genre, Critic Score, User Score) affect video games sales. This analysis will help establish whether publishers should take those factors into account when creating and marketing new games.
+  
+##Updates from Deliverable 1
+
+In the first deliverable, we stated that a correlation between game genre and sales would be established. We found out that some genres (such as Action) were more popular than others and that their proportions varied over time. In this deliverable, we hope to establish to what extent do those genres, as well as Critic and User Scores, affect global sales. In order to illustrate these relationships, linear regressions are conducted between Sales and other variables. 
+
+Besides our main objectives, the dataset itself was also updated. As mentioned in the first deliverable, there was a lot of data missing data points (especially in the years following 2009) that ultimately resulted in faulty analysis. We searched for an updated version of the same dataset that at least includes the last year or two, but we could not find any. Therefore, we were able to backtrace the source code that used to scrape the data from VGChartz website to build an updated version of the dataset. Because the original dataset is about five years old, the code needed to be modified to make it work with the new structure of HTML document file and CSS style of the website. Eventually, we were able to build a new dataset that includes almost 56,000 games — a multiple of 3.5 in size of the original dataset.
+
+
+##Cleaning the Data
+
+The first step was to make sure that our data was clean and did not have a lot of missing values. However, some games have NAs for certain variables (such as Critic_score) but actual values for other variables (such as Sales). We thus had to carefully estimate whether removing them altogether would affect our results. So, we compared linear fit results before and after removing those games and found out that results did not change significantly and the data still made sense statistically. We, therefore, chose to remove all the games with missing values. 
+
+##Modeling:
+
+##Distribution of Response Variable
+
+The first step of our analysis is to check the distribution of the response variable. In this case, we are choosing “Sales” as our response variable as the goal of the project is to evaluate trends and how they affect global sales of video games.
+
+```{r}
+library(tidyverse)
+data <- read_csv("vgsales_metacritic.csv", col_types =  cols(Critic_Score = col_double(), User_Score = col_double()))
+
+data_filtered <- data %>% filter((Global_Sales != 0 | Total_Shipped != 0) &!is.na(User_Score) & !is.na(Critic_Score)) %>% mutate(Sales = Global_Sales + Total_Shipped, Sales_log = log(Global_Sales + Total_Shipped), Log_CS = log(Critic_Score), Log_US = log(User_Score))
+problems(data_filtered)
+
+data_filtered %>% mutate(density_th = dnorm(log(Sales), mean = mean(log(Sales)), sd = sd(log(Sales)))) %>% 
+  ggplot() + 
+  geom_histogram(aes(x = log(Sales), y = ..density..), fill = "gray", color = "black", binwidth = 0.2) + 
+  geom_density(aes(x = log(Sales)), colour = "blue", fill = "blue", alpha = 0.2) + 
+  geom_line(aes(x = log(Sales), y = density_th), colour = "red") + 
+  labs(x = "Log(Sales)", 
+       y =  "Density", 
+       title = "Sales Distribution", 
+       subtitle = "Graph 7", 
+       caption = "This graph showcases how close is the actual data relative to the theoretical distribution. 
+       The blue line and its fill showcases the actual Sales' distribution. 
+       The red line is the theoretical normal distribution of Sales.")
+
+```
+
+According to the above curve, video game sales data can be seen to have a normal distribution. While there are some outliers, we can safely assume that the majority of the data points are relatively similar. The blue curve portrays actual sales distribution, and the red curve shows the theoretical normal distribution. This makes sense, as most games are sold in similar numbers, with some of them being extremely popular and others not at all.
+
+
+##Transformation of Variables
+
+In order to achieve normality and clearer results, we chose to use the natural logarithm of our dependent variable “Sales”. The reason for this choice is mainly because video game sales (dependent variable) grew exponentially over the past two decades, which might be due to the rise of technological trends. As for the independent variables, they do not grow at such a rate since they are not closely related to Sales. Therefore, using the natural log for our dependent variable only linearizes the relationship curve and results in a better fitted model.
+
+##Model Parameter Estimates and their Interpretations
+When the regression model was plotted, we used critic score, user score and genres as independent variables to see how they influence sales. The coefficients and corresponding p-values that we got from fitting the model told us about the significance of each variable’s effect. Consequently, we were able to state that critic score, user score, and some particular genres had a significant influence on the dependent variable. However, even though each of those arguments is important in the model, the overall goodness of fit is only 10.5%, as our R^2 value shows us. Therefore, our parameters explain only 10% of the variability in the data, which means that those independent variables do not have a great impact on global sales, as expected. That being said, it does show a clear correlation between genre and score, and sales, something that game publishers might not have thought about.
+
+```{r}
+coef(mod <- lm(log(Sales) ~ Critic_Score + User_Score + Genre, data = data_filtered))
+summary(mod)
+```
+
+##Hypothesis Tests for Significant Main Effects
+
+After fitting a linear regression model and getting p-values for each variable, we selected the genres that were the most statistically significant and compared them in terms of their sales means. We made a plot and also conducted Tukey’s Test which allowed us to make pairwise comparisons of means. 
+
+```{r}
+data_filtered2 <- data_filtered %>% filter(Genre == "Adventure" | Genre == 'Visual Novel' | Genre == 'Puzzle') 
+
+data_filtered2 %>% group_by(Genre) %>% ggplot() + geom_boxplot(aes(reorder(Genre, log(Sales), FUN = median), log(Sales)), fill = "slategray3", color = 'midnightblue') + labs(title = "Comparison of Sales by 3 Most Statisticly Significant Genres", x = "Genres", y = "log(Sales)", subtitle = "Graph 8", caption = 'This plot shows difference of sales amount in terms of three most significant genres in our linear regression model') + theme(axis.text.x = element_text(angle = 90))
+```
+
+In the plot we observe the three most statistically significant genres in terms of our regression model, Puzzle, Adventure, and Miscellaneous. The box plots represent the natural logarithm of sales. As we can see from the black horizontal lines, the medians for those genres are approximately the same. However, it is hard to tell if there is a statistically significant difference between them, so we conduct a Tukey comparison to obtain p-values and evaluate whether the combination of genres has a greater effect.
+
+```{r}
+plant.lm <- lm(log(Sales) ~ Genre, data = data_filtered2)
+plant.av <- aov(plant.lm)
+summary(plant.av)
+
+tukey.test <- TukeyHSD(plant.av)
+tukey.test
+```
+
+Our null hypothesis for Tukey’s test is that the medians for two genres are the same, in our alternative hypothesis, we say that they are not. The only statistically significant difference is observed between puzzle and adventure, as the p-value is bigger than 0.05. Another reason to conclude that would be 0 that is included in the confidence interval, which means that the potential difference between those groups can be 0. Other than that, we conclude that there are significant differences between Misc and Adventure, and Puzzle and Misc. Therefore, sales will be affected differently by Misc and other genres. Whereas, there won’t be a huge difference in the effect on sales between puzzle and adventure. 
+
+##Prediction of the Response
+
+After assessing to what extent the independent variables affected global sales, we plotted prediction graphs for both Critic and User Scores to predict global sales using each of the two independent variables. 
+
+```{r prediction}
+library(modelr)
+library(hexbin)
+mod <- lm(log(Sales) ~ Critic_Score * Genre + User_Score, data = data_filtered)
+ggplot(data_filtered %>% add_predictions(mod), aes(x = Critic_Score, y = log(Sales))) + geom_hex(alpha = 0.7) + geom_line(aes(y = pred)) + geom_smooth(method = "lm", color = "red") + labs(
+  x = "Critic Score", 
+  y =  "Log(Sales)", 
+  title = "Sales Prediction with respect to Critic Score", 
+  subtitle = "Graph 9", 
+  caption = "The theoretical linear model  in red shows the trend of Sales growth related to critic score. The black line shows the actual data.")
+ggplot(data_filtered %>% add_predictions(mod), aes(x = User_Score, y = log(Sales))) + geom_hex(alpha = 0.7) + geom_line(aes(y = pred))  + geom_smooth(method = "lm", color = "red") + labs(
+  x = "User Score", 
+  y =  "Log(Sales)", 
+  title = "Sales Prediction with respect to User Score", 
+  subtitle = "Graph 10", 
+  caption = "The theoretical linear model  in red shows the trend of Sales growth related to critic score. The black line shows the actual data.")
+ggplot(data_filtered %>% add_residuals(mod), aes(x = Critic_Score, y = resid)) + geom_hex(alpha = 0.7) + geom_hline(yintercept = 0) + labs(
+  x = "Critic Score", 
+  y =  "Residual", 
+  title = "Residual with respect to Critic Score", 
+  subtitle = "Graph 11", 
+  caption = "The black line portrays the residual error of the model.")
+ggplot(data_filtered %>% add_residuals(mod), aes(x = User_Score, y = resid)) + geom_hex(alpha = 0.7) + geom_hline(yintercept = 0) + labs(
+  x = "User Score", 
+  y =  "Residual", 
+  title = "Residual with respect to User Score", 
+  subtitle = "Graph 12", 
+  caption = "The black line portrays the residual error of the model.")
+```
+
+Graphs 9 and 10 show the prediction model of the effect of critic score and user score on sales, respectively. There is much more noise in the critic score plot as the black line is more scattered. The trend line in red has a bigger slope as well. These observations makes sense as we have established earlier that critic scores have more effect on sales than user scores. Graph 9’s curve also has more residuals for higher critic scores and graph 10’s residuals are much more staggering than the previous one, especially for lower scores. This ultimately means that critics are more forgiving when rating games than users. Graphs 11 and 12 portray the residuals with respect to critic scores and user scores, respectively. While they do not deliver too much information, they do show how most of the noise is around critic and user scores of around 7.5. This means that most games from various genres are rated as such. 
+
+
+##Residual Analysis to Check Model Assumptions
+
+```{r}
+library(ggfortify)
+par(mfrow = c(2, 2))
+autoplot(mod, alpha = 0.5, colour = 'azure4')    
+```
+
+After fitting a linear regression model, we checked our assumptions about the normality of the model by plotting the above graphs. These 4 plots also serve to detect potential problems and include: Residual vs Fitted, Normal Q-Q, Scale-Location and Residual vs Leverage. 
+
+The first one checks for the linearity assumption, i.e. whether our model has a linear relationship between dependent and independent variables. It does so by showing us the relationship between residual and fitted values. A residual is the difference between the observed value of the dependent variable (y) and the predicted value (ŷ). As seen, the residual plot shows almost no fitted pattern, as our data is generally symmetrically distributed around y=0 (blue line). This indicates that there is almost no difference in the gathered data and predicted values, which satisfies a linearity condition. 
+
+The second graph is a normal Q-Q (Quantile-Quantile), which indicates to what extent is our data normally distributed. Two lines indicate a comparison between our data and normal distribution by plotting their quantiles against each other. Because the plotted “experimental” line almost identically mimics a straight fitted line, we can safely assume normality. 
+The third plot portrays a Scale-Location relationship, which provides us with information on whether residuals are spread equally along the ranges of predictors. The horizontal blue line coupled with an equal spread of data points means that all of the independent variables have the same variance (deviation of a variable from its mean). In other words, the variability of the residual points stays the same across all values of the fitted outcome variable. We can therefore conclude that variances across independent variables are very similar. 
+
+The last plot we created was fitting Residuals vs Leverage (a measure of how far away independent values are from each other). We then proceed to spot any outliers that would affect the normality of the data. As we can see, there are some extreme points like “394” and “7388”, but in terms of residuals, none of those values exceed 3 standard deviations in absolute value, which allows us to conclude that there are no extreme outliers that need to be omitted. 
+
+
+##Discussion
+
+  The main goal of this research was to find the most significant factors that have an impact on video game sales. We conducted this analysis using linear regression models and hypothesis tests. We found out that both critic score and user score were influential to a limited extent. Critic score, however, appeared to be much more significant than user scores, which means that higher critic scores could result in higher sales. Critic Score data is also much cleaner as the prediction models portray. This makes sense as critics tend to use specific parameters and metrics to rate games, unlike actual gamers who are more subjective. These results are interesting and prove the way critics try to stay objective as much as possible.
+	Another important finding was related to game genres. Several of them that had significant effects on sales, but only a few of those had a positive effect. According to our analysis, “adventure”, “miscellaneous”, “puzzle”, “simulation” and “visual novel” categories have a negative impact on sales, which implies that sales would be lower for games of those genres. The best genre for the video games industry ended up to be “shooter”, with “action” taking the second place. This finding is aligned with the result we found in the first deliverable as we saw how “action” category grew in popularity over the years. 
+
+
+
