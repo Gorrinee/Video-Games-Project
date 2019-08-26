@@ -4,12 +4,10 @@
 ## Table of contents
 * [Motivation](#motivation)
 * [General info](#general-info)
-* [Screenshots](#screenshots)
+* [Data description](#data-description)
 * [Technologies](#technologies)
-* [Setup](#setup)
-* [Features](#features)
+* [Code examples](#code-examples)
 * [Status](#status)
-* [Inspiration](#inspiration)
 * [Contact](#contact)
 
 ## Motivation 
@@ -27,13 +25,7 @@ Initially, our group used dataset found on Kaggle created by a user named `Juttu
 ## Code Examples
 Here is the first: 
 
-  `library(tidyverse)
-  data <- read_csv("vgsales_metacritic.csv", col_types =  cols(Critic_Score = col_double(), User_Score = col_double()))`
-
-  `data_filtered <- data %>% filter((Global_Sales != 0 | Total_Shipped != 0) &!is.na(User_Score) & !is.na(Critic_Score)) %>% mutate(Sales =    Global_Sales + Total_Shipped, Sales_log = log(Global_Sales + Total_Shipped), Log_CS = log(Critic_Score), Log_US = log(User_Score))
-  problems(data_filtered)`
-
-  `data_filtered %>% mutate(density_th = dnorm(log(Sales), mean = mean(log(Sales)), sd = sd(log(Sales)))) %>% 
+  ` data_filtered %>% mutate(density_th = dnorm(log(Sales), mean = mean(log(Sales)), sd = sd(log(Sales)))) %>% 
     ggplot() + 
     geom_histogram(aes(x = log(Sales), y = ..density..), fill = "gray", color = "black", binwidth = 0.2) + 
     geom_density(aes(x = log(Sales)), colour = "blue", fill = "blue", alpha = 0.2) + 
@@ -44,8 +36,7 @@ Here is the first:
         subtitle = "Graph 7", 
         caption = "This graph showcases how close is the actual data relative to the theoretical distribution. 
         The blue line and its fill showcases the actual Sales' distribution. 
-        The red line is the theoretical normal distribution of Sales.") ``
-`
+        The red line is the theoretical normal distribution of Sales.") `
 
 ## Status
 Project is: _finished_
