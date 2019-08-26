@@ -1,5 +1,5 @@
 # Analyzing-Video-Games-Trends-Project
-> Analysis of video game trends over the last 50 years. 
+Analysis of video game trends over the last 50 years. 
 
 ## Table of contents
 * [Motivation](#motivation)
