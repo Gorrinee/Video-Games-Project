@@ -15,9 +15,9 @@ One of the main branches of the entertainment industry is video games. Our group
 
 ## General info 
 The project consisted of 3 main parts: 
-* deliverable #1
-* deliverable #2
-* final report. 
+* Deliverable #1
+* Deliverable #2
+* Final report 
 
 In the first one, our team looked into the variation of one and more variables to spot some interesting findings and correlations. In the second deliverable we fitted a linear regression model, tested some hypotheses and plotted the predictions of our response. In the final report we summarized our findings and concluded how trends of video games differed over time and what affected those trends.
 
